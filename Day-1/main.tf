@@ -157,7 +157,7 @@ resource "aws_iam_role" "ecsTaskExecutionRole" {
 
 # attatch AWS managed policy to Task execution Role -11
 resource "aws_iam_role_policy_attachment" "test-attach" {
-  role       = aws_iam_role.ecsTaskExecutionRole
+  role       = aws_iam_role.ecsTaskExecutionRole.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
 }
 
@@ -309,7 +309,9 @@ resource "aws_ecs_service" "demo_ecs_service" {
 
 }
 
-
+output "alb_dns" {
+  value = aws_lb.ecs-demo-alb.dns_name
+}
 
 
 
