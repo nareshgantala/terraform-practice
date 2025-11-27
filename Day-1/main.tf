@@ -9,6 +9,7 @@ terraform {
 
 provider "aws" {
   # Configuration options
+  region = "us-east-1"
 }
 
 # VPC-1
@@ -31,9 +32,22 @@ resource "aws_internet_gateway" "gw" {
 resource "aws_subnet" "public" {
   vpc_id     = aws_vpc.main.id
   cidr_block = "10.0.10.0/24"
+  availability_zone = "us-east-1a"
 
   tags = {
     Name = "public"
+  }
+}
+
+
+# Public Subnet-3
+resource "aws_subnet" "public_2" {
+  vpc_id     = aws_vpc.main.id
+  cidr_block = "10.0.11.0/24"
+  availability_zone = "us-east-1b"
+
+  tags = {
+    Name = "public_2"
   }
 }
 
@@ -54,6 +68,12 @@ resource "aws_route_table" "public" {
 # Associate Public Route Table with Public Subnet-5
 resource "aws_route_table_association" "a" {
   subnet_id      = aws_subnet.public.id
+  route_table_id = aws_route_table.public.id
+}
+
+# Associate Public Route Table with Public Subnet-5
+resource "aws_route_table_association" "a" {
+  subnet_id      = aws_subnet.public_2.id
   route_table_id = aws_route_table.public.id
 }
 
@@ -95,7 +115,7 @@ resource "aws_route_table" "private" {
 
   route {
     cidr_block = "0.0.0.0/0"
-    gateway_id = aws_nat_gateway.ngw.id
+    nat_gateway_id = aws_nat_gateway.ngw.id
   }
 
   tags = {
@@ -209,15 +229,10 @@ resource "aws_lb" "ecs-demo-alb" {
   internal           = false
   load_balancer_type = "application"
   security_groups    = [aws_security_group.alb_sg.id]
-  subnets            = [aws_subnet.public.id]
+  subnets            = [aws_subnet.public.id,aws_subnet.public_2.id ]
 
-  enable_deletion_protection = true
+  enable_deletion_protection = false
 
-  access_logs {
-    bucket  = aws_s3_bucket.lb_logs.id
-    prefix  = "test-lb"
-    enabled = true
-  }
 
   tags = {
     Environment = "production"
@@ -273,17 +288,24 @@ resource "aws_ecs_task_definition" "demo_ecs_task" {
 
 resource "aws_ecs_service" "demo_ecs_service" {
   name            = "demo_ecs_service"
+  launch_type = "FARGATE"
   cluster         = aws_ecs_cluster.demo_ecs_cluster.id
   task_definition = aws_ecs_task_definition.demo_ecs_task.arn
   desired_count   = 1
-  iam_role        = aws_iam_role.ecsTaskExecutionRole.arn
 
+  network_configuration {
+    assign_public_ip = false
+    security_groups = [aws_security_group.ecs_task_sg]
+    subnets = [ aws_subnet.private.id ]
+  }
  
   load_balancer {
-    target_group_arn = aws_lb_target_group.ecs-demo-alb.arn
+    target_group_arn = aws_lb_target_group.tg.arn
     container_name   = "demo_nginx"
     container_port   = 80
   }
+
+  depends_on = [ aws_lb_listener.lb_listner ]
 
 }
 
