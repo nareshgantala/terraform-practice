@@ -72,7 +72,7 @@ resource "aws_route_table_association" "a" {
 }
 
 # Associate Public Route Table with Public Subnet-5
-resource "aws_route_table_association" "a" {
+resource "aws_route_table_association" "b" {
   subnet_id      = aws_subnet.public_2.id
   route_table_id = aws_route_table.public.id
 }
@@ -295,7 +295,7 @@ resource "aws_ecs_service" "demo_ecs_service" {
 
   network_configuration {
     assign_public_ip = false
-    security_groups = [aws_security_group.ecs_task_sg]
+    security_groups = [aws_security_group.ecs_task_sg.id]
     subnets = [ aws_subnet.private.id ]
   }
  
