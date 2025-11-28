@@ -7,3 +7,4 @@ nginx-modular-approach/terraform.tfstate.backup
 nginx-web-server/terraform.tfstate.backup
 nginx-web-server/terraform.tfstate.backup
 nginx-web-server/terraform.tfstate.backup
+nginx-data-approach/.terraform.lock.hcl
